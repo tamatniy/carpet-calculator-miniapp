@@ -75,14 +75,22 @@ class CarpetCalculator {
         // Выбор пакета
         document.querySelectorAll('[data-package]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.selectPackage(e.target.dataset.package);
+                e.preventDefault();
+                e.stopPropagation();
+                const packageType = e.currentTarget.dataset.package;
+                console.log('Package selected:', packageType);
+                this.selectPackage(packageType);
             });
         });
         
         // Выбор типа ворса
         document.querySelectorAll('[data-pile]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.selectPile(e.target.dataset.pile);
+                e.preventDefault();
+                e.stopPropagation();
+                const pileType = e.currentTarget.dataset.pile;
+                console.log('Pile selected:', pileType);
+                this.selectPile(pileType);
             });
         });
         
@@ -147,7 +155,10 @@ class CarpetCalculator {
             this.reset();
         });
         
-        document.getElementById('share-result').addEventListener('click', () => {
+        document.getElementById('share-result').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Share button event triggered');
             this.shareResult();
         });
     }
@@ -169,6 +180,7 @@ class CarpetCalculator {
     }
     
     selectPackage(packageType) {
+        console.log('selectPackage called with:', packageType);
         this.data.package = packageType;
         
         // Убрать выделение с других кнопок
@@ -177,13 +189,21 @@ class CarpetCalculator {
         });
         
         // Выделить выбранную кнопку
-        document.querySelector(`[data-package="${packageType}"]`).classList.add('selected');
+        const selectedBtn = document.querySelector(`[data-package="${packageType}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+            console.log('Package button selected:', packageType);
+        } else {
+            console.error('Package button not found:', packageType);
+        }
         
         // Перейти к следующему шагу сразу
+        console.log('Switching to pile screen');
         this.showScreen('pile');
     }
     
     selectPile(pileType) {
+        console.log('selectPile called with:', pileType);
         this.data.pile = pileType;
         
         // Убрать выделение с других кнопок
@@ -192,9 +212,16 @@ class CarpetCalculator {
         });
         
         // Выделить выбранную кнопку
-        document.querySelector(`[data-pile="${pileType}"]`).classList.add('selected');
+        const selectedBtn = document.querySelector(`[data-pile="${pileType}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+            console.log('Pile button selected:', pileType);
+        } else {
+            console.error('Pile button not found:', pileType);
+        }
         
         // Перейти к следующему шагу сразу
+        console.log('Switching to dimensions screen');
         this.showScreen('dimensions');
     }
     
@@ -292,6 +319,8 @@ class CarpetCalculator {
     }
     
     shareResult() {
+        console.log('Share button clicked');
+        
         const area = this.data.length * this.data.width;
         const pricePerSquareMeter = this.prices[this.data.package][this.data.pile];
         let totalPrice = area * pricePerSquareMeter;
@@ -321,9 +350,12 @@ class CarpetCalculator {
 
 Рассчитано в Telegram Mini App "Калькулятор ковров"`;
 
+        console.log('Share text:', shareText);
+
         if (window.Telegram && window.Telegram.WebApp) {
-            // Использовать Telegram Web App API для отправки
+            console.log('Telegram WebApp available');
             try {
+                // Попробуем отправить данные
                 window.Telegram.WebApp.sendData(JSON.stringify({
                     type: 'calculation_result',
                     data: {
@@ -335,43 +367,80 @@ class CarpetCalculator {
                         totalPrice: Math.round(totalPrice)
                     }
                 }));
+                console.log('Data sent successfully');
                 this.showMessage('Результат отправлен в чат!');
             } catch (error) {
                 console.error('Ошибка отправки:', error);
                 this.fallbackShare(shareText);
             }
         } else {
+            console.log('Telegram WebApp not available, using fallback');
             this.fallbackShare(shareText);
         }
     }
     
     fallbackShare(shareText) {
+        console.log('Using fallback share method');
         // Fallback для браузера
         if (navigator.share) {
+            console.log('Using navigator.share');
             navigator.share({
                 title: 'Расчёт стоимости чистки ковра',
                 text: shareText
-            }).catch(() => {
+            }).then(() => {
+                console.log('Share successful');
+                this.showMessage('Результат поделен!');
+            }).catch((error) => {
+                console.error('Share failed:', error);
                 this.copyToClipboard(shareText);
             });
         } else {
+            console.log('Navigator.share not available, copying to clipboard');
             this.copyToClipboard(shareText);
         }
     }
     
     copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            this.showMessage('Результат скопирован в буфер обмена');
-        }).catch(() => {
-            // Fallback для старых браузеров
+        console.log('Copying to clipboard');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('Clipboard write successful');
+                this.showMessage('Результат скопирован в буфер обмена!');
+            }).catch((error) => {
+                console.error('Clipboard write failed:', error);
+                this.legacyCopyToClipboard(text);
+            });
+        } else {
+            console.log('Modern clipboard API not available, using legacy method');
+            this.legacyCopyToClipboard(text);
+        }
+    }
+    
+    legacyCopyToClipboard(text) {
+        console.log('Using legacy copy method');
+        try {
             const textArea = document.createElement('textarea');
             textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
             document.body.appendChild(textArea);
+            textArea.focus();
             textArea.select();
-            document.execCommand('copy');
+            const successful = document.execCommand('copy');
             document.body.removeChild(textArea);
-            this.showMessage('Результат скопирован в буфер обмена');
-        });
+            
+            if (successful) {
+                console.log('Legacy copy successful');
+                this.showMessage('Результат скопирован в буфер обмена!');
+            } else {
+                console.log('Legacy copy failed');
+                this.showMessage('Не удалось скопировать результат. Попробуйте выделить текст вручную.');
+            }
+        } catch (error) {
+            console.error('Legacy copy error:', error);
+            this.showMessage('Ошибка при копировании. Попробуйте выделить текст вручную.');
+        }
     }
     
     reset() {

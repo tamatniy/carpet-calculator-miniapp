@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест исправлений - Калькулятор ковров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #006699;
+        }
+        .result {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background: #ffeaea;
+            border-left-color: #dc3545;
+        }
+        .console-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест исправлений калькулятора ковров</h1>
+    
+    <div class="test-container">
+        <h2>Тест 1: Проверка обработчиков событий</h2>
+        <p>Нажмите на кнопки ниже и проверьте консоль браузера (F12)</p>
+        <button class="test-button" onclick="testPackageSelection()">Тест выбора пакета</button>
+        <button class="test-button" onclick="testPileSelection()">Тест выбора ворса</button>
+        <button class="test-button" onclick="testShareFunction()">Тест функции поделиться</button>
+        <div id="test-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 2: Симуляция кликов</h2>
+        <p>Симуляция кликов по кнопкам выбора услуг</p>
+        <button class="test-button" onclick="simulatePackageClick()">Симуляция клика по "Стандартный"</button>
+        <button class="test-button" onclick="simulatePileClick()">Симуляция клика по "Короткий ворс"</button>
+        <div id="simulation-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Консоль отладки</h2>
+        <div id="console-output" class="console-output"></div>
+        <button class="test-button" onclick="clearConsole()">Очистить консоль</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 Ссылки</h2>
+        <a href="index.html" class="test-button" style="text-decoration: none; display: inline-block;">Открыть основное приложение</a>
+    </div>
+
+    <script>
+        // Перехватываем console.log для отображения в интерфейсе
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addToConsole(message, type = 'log') {
+            const consoleOutput = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${type === 'error' ? 'red' : 'black'};">${message}</span>`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        function testPackageSelection() {
+            console.log('Тестирование выбора пакета...');
+            const result = document.getElementById('test-result');
+            result.style.display = 'block';
+            result.innerHTML = 'Проверьте консоль браузера (F12) для отладочной информации';
+        }
+
+        function testPileSelection() {
+            console.log('Тестирование выбора ворса...');
+            const result = document.getElementById('test-result');
+            result.style.display = 'block';
+            result.innerHTML = 'Проверьте консоль браузера (F12) для отладочной информации';
+        }
+
+        function testShareFunction() {
+            console.log('Тестирование функции поделиться...');
+            
+            // Симуляция данных для тестирования
+            const testData = {
+                package: 'premium',
+                pile: 'long',
+                length: 2.5,
+                width: 1.5,
+                odorRemoval: true,
+                orderNumber: 'TEST123'
+            };
+            
+            const prices = {
+                standard: { short: 10, long: 11 },
+                premium: { short: 13, long: 15 }
+            };
+            
+            const area = testData.length * testData.width;
+            const pricePerSquareMeter = prices[testData.package][testData.pile];
+            let totalPrice = area * pricePerSquareMeter;
+            
+            if (testData.odorRemoval) {
+                totalPrice += 25;
+            }
+            
+            const shareText = `🧩 Расчёт стоимости чистки ковра
+
+Номер заказа: ${testData.orderNumber}
+Пакет услуг: Премиум
+Тип ворса: Длинный
+Площадь: ${area.toFixed(1)} м²
+Доп.услуга: Удаление запаха — да
+Итоговая стоимость: ${Math.round(totalPrice)} рублей
+
+Рассчитано в Telegram Mini App "Калькулятор ковров"`;
+
+            console.log('Тестовый текст для поделиться:', shareText);
+            
+            // Тест копирования в буфер обмена
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    console.log('✅ Копирование в буфер обмена успешно');
+                    const result = document.getElementById('test-result');
+                    result.style.display = 'block';
+                    result.innerHTML = '✅ Тест функции поделиться: Копирование в буфер обмена работает!';
+                }).catch((error) => {
+                    console.error('❌ Ошибка копирования:', error);
+                    const result = document.getElementById('test-result');
+                    result.style.display = 'block';
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Ошибка копирования в буфер обмена';
+                });
+            } else {
+                console.log('❌ Clipboard API не доступен');
+                const result = document.getElementById('test-result');
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = '❌ Clipboard API не доступен в этом браузере';
+            }
+        }
+
+        function simulatePackageClick() {
+            console.log('Симуляция клика по кнопке "Стандартный"...');
+            
+            // Создаём тестовую кнопку
+            const testBtn = document.createElement('button');
+            testBtn.setAttribute('data-package', 'standard');
+            testBtn.innerHTML = '<div class="option-title">🟩 Стандартный</div><div class="option-price">от 10 руб/м²</div>';
+            
+            // Симулируем клик
+            const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            
+            testBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const packageType = e.currentTarget.dataset.package;
+                console.log('✅ Симуляция клика: Package selected:', packageType);
+            });
+            
+            testBtn.dispatchEvent(clickEvent);
+            
+            const result = document.getElementById('simulation-result');
+            result.style.display = 'block';
+            result.innerHTML = '✅ Симуляция клика выполнена. Проверьте консоль.';
+        }
+
+        function simulatePileClick() {
+            console.log('Симуляция клика по кнопке "Короткий ворс"...');
+            
+            // Создаём тестовую кнопку
+            const testBtn = document.createElement('button');
+            testBtn.setAttribute('data-pile', 'short');
+            testBtn.innerHTML = '<div class="option-title">Короткий ворс</div><div class="option-price">10 руб/м²</div>';
+            
+            // Симулируем клик
+            const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            
+            testBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const pileType = e.currentTarget.dataset.pile;
+                console.log('✅ Симуляция клика: Pile selected:', pileType);
+            });
+            
+            testBtn.dispatchEvent(clickEvent);
+            
+            const result = document.getElementById('simulation-result');
+            result.style.display = 'block';
+            result.innerHTML = '✅ Симуляция клика выполнена. Проверьте консоль.';
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        // Инициализация
+        console.log('Тестовая страница загружена');
+        console.log('Откройте основное приложение и проверьте работу исправлений');
+    </script>
+</body>
+</html>
