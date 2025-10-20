@@ -328,74 +328,28 @@ class CarpetCalculator {
     shareResult() {
         console.log('Share button clicked');
         
-        const area = this.data.length * this.data.width;
-        const pricePerSquareMeter = this.prices[this.data.package][this.data.pile];
-        let totalPrice = area * pricePerSquareMeter;
-        
-        if (this.data.odorRemoval) {
-            totalPrice += this.odorRemovalPrice;
-        }
-        
-        const packageNames = {
-            standard: 'Стандартный',
-            premium: 'Премиум'
-        };
-        
-        const pileNames = {
-            short: 'Короткий',
-            long: 'Длинный'
-        };
-        
-        const shareText = `🧩 Расчёт стоимости чистки ковра
-
-Номер заказа: ${this.data.orderNumber || 'Не указан'}
-Пакет услуг: ${packageNames[this.data.package]}
-Тип ворса: ${pileNames[this.data.pile]}
-Площадь: ${area.toFixed(1)} м²
-Доп.услуга: ${this.data.odorRemoval ? 'Удаление запаха — да' : 'Нет'}
-Итоговая стоимость: ${Math.round(totalPrice)} рублей
-
-Рассчитано в Telegram Mini App "Калькулятор ковров"`;
-
-        console.log('Share text:', shareText);
-
-        if (window.Telegram && window.Telegram.WebApp) {
-            console.log('Telegram WebApp available');
-            
-            // Попробуем использовать разные методы отправки
-            try {
-                // Метод 1: Попробуем закрыть Mini App и отправить сообщение
-                if (window.Telegram.WebApp.close) {
-                    // Создаём сообщение для отправки
-                    const message = `🧩 Результат расчёта стоимости чистки ковра:
-
-📋 Номер заказа: ${this.data.orderNumber || 'Не указан'}
-📦 Пакет услуг: ${packageNames[this.data.package]}
-🧶 Тип ворса: ${pileNames[this.data.pile]}
-📏 Площадь: ${area.toFixed(1)} м²
-🧴 Доп.услуга: ${this.data.odorRemoval ? 'Удаление запаха — да' : 'Нет'}
-💰 Итоговая стоимость: ${Math.round(totalPrice)} рублей
-
-#КалькуляторКовров #РасчётСтоимости`;
-                    
-                    // Отправляем данные боту
+        // Создаём изображение результата
+        this.createResultImage().then((imageBlob) => {
+            if (window.Telegram && window.Telegram.WebApp) {
+                console.log('Telegram WebApp available');
+                
+                try {
+                    // Отправляем изображение боту
                     window.Telegram.WebApp.sendData(JSON.stringify({
-                        action: 'share_result',
+                        action: 'share_result_image',
+                        imageData: imageBlob,
                         result: {
                             orderNumber: this.data.orderNumber,
-                            package: packageNames[this.data.package],
-                            pile: pileNames[this.data.pile],
-                            area: area.toFixed(1),
+                            package: this.data.package,
+                            pile: this.data.pile,
+                            area: (this.data.length * this.data.width).toFixed(1),
                             odorRemoval: this.data.odorRemoval,
-                            totalPrice: Math.round(totalPrice),
-                            message: message
+                            totalPrice: this.calculateTotalPrice()
                         }
                     }));
                     
-                    console.log('Data sent to bot');
-                    
-                    // Показываем правильное сообщение
-                    this.showMessage('Данные отправлены боту. Если сообщение не появилось в чате, используйте кнопку "Скопировать результат".');
+                    console.log('Image data sent to bot');
+                    this.showMessage('Изображение результата отправлено боту! Проверьте чат.');
                     
                     // Закрываем Mini App через 2 секунды
                     setTimeout(() => {
@@ -404,19 +358,148 @@ class CarpetCalculator {
                         }
                     }, 2000);
                     
-                } else {
-                    throw new Error('WebApp.close not available');
+                } catch (error) {
+                    console.error('Error sending image to bot:', error);
+                    this.showMessage('Ошибка отправки изображения. Используйте кнопку "Скопировать результат".');
+                    this.fallbackShare();
                 }
-            } catch (error) {
-                console.error('Error sending to bot:', error);
-                // Fallback к копированию в буфер обмена
-                this.showMessage('Ошибка отправки. Используйте кнопку "Скопировать результат".');
-                this.fallbackShare(shareText);
+            } else {
+                console.log('Telegram WebApp not available, using fallback');
+                this.fallbackShare();
             }
-        } else {
-            console.log('Telegram WebApp not available, using fallback');
-            this.fallbackShare(shareText);
+        }).catch((error) => {
+            console.error('Error creating image:', error);
+            this.showMessage('Ошибка создания изображения. Используйте кнопку "Скопировать результат".');
+            this.fallbackShare();
+        });
+    }
+    
+    calculateTotalPrice() {
+        const area = this.data.length * this.data.width;
+        const pricePerSquareMeter = this.prices[this.data.package][this.data.pile];
+        let totalPrice = area * pricePerSquareMeter;
+        
+        if (this.data.odorRemoval) {
+            totalPrice += this.odorRemovalPrice;
         }
+        
+        return Math.round(totalPrice);
+    }
+    
+    async createResultImage() {
+        return new Promise((resolve, reject) => {
+            try {
+                // Создаём canvas для изображения
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Размеры изображения
+                const width = 400;
+                const height = 300;
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Получаем тему
+                const isDark = window.Telegram && window.Telegram.WebApp && 
+                              window.Telegram.WebApp.colorScheme === 'dark';
+                
+                // Цвета в зависимости от темы
+                const bgColor = isDark ? '#2d2d2d' : '#ffffff';
+                const textColor = isDark ? '#ffffff' : '#000000';
+                const accentColor = '#0088cc';
+                const borderColor = isDark ? '#404040' : '#e9ecef';
+                
+                // Фон
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, width, height);
+                
+                // Рамка
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(10, 10, width - 20, height - 20);
+                
+                // Заголовок
+                ctx.fillStyle = accentColor;
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🧩 Результат расчёта', width / 2, 50);
+                
+                // Данные результата
+                const area = this.data.length * this.data.width;
+                const totalPrice = this.calculateTotalPrice();
+                
+                const packageNames = {
+                    standard: 'Стандартный',
+                    premium: 'Премиум'
+                };
+                
+                const pileNames = {
+                    short: 'Короткий',
+                    long: 'Длинный'
+                };
+                
+                const resultData = [
+                    ['Номер заказа:', this.data.orderNumber || 'Не указан'],
+                    ['Пакет услуг:', packageNames[this.data.package]],
+                    ['Тип ворса:', pileNames[this.data.pile]],
+                    ['Площадь:', `${area.toFixed(1)} м²`],
+                    ['Доп.услуга:', this.data.odorRemoval ? 'Удаление запаха — да' : 'Нет'],
+                    ['Итоговая стоимость:', `${totalPrice} рублей`]
+                ];
+                
+                // Отображаем данные
+                ctx.fillStyle = textColor;
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'left';
+                
+                let y = 90;
+                resultData.forEach(([label, value], index) => {
+                    // Метка
+                    ctx.fillText(label, 30, y);
+                    
+                    // Значение
+                    if (index === resultData.length - 1) {
+                        // Итоговая стоимость выделяем
+                        ctx.fillStyle = accentColor;
+                        ctx.font = 'bold 18px Arial';
+                    }
+                    ctx.fillText(value, 200, y);
+                    
+                    // Возвращаем обычный стиль
+                    ctx.fillStyle = textColor;
+                    ctx.font = '16px Arial';
+                    
+                    // Линия разделитель
+                    if (index < resultData.length - 1) {
+                        ctx.strokeStyle = borderColor;
+                        ctx.beginPath();
+                        ctx.moveTo(30, y + 10);
+                        ctx.lineTo(width - 30, y + 10);
+                        ctx.stroke();
+                    }
+                    
+                    y += 30;
+                });
+                
+                // Подпись внизу
+                ctx.fillStyle = textColor;
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Калькулятор ковров - Telegram Mini App', width / 2, height - 20);
+                
+                // Конвертируем в blob
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to create image blob'));
+                    }
+                }, 'image/png');
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
     
     copyResult() {
@@ -454,40 +537,75 @@ class CarpetCalculator {
         this.copyToClipboard(shareText);
     }
     
-    fallbackShare(shareText) {
+    fallbackShare() {
         console.log('Using fallback share method');
-        // Fallback для браузера
-        if (navigator.share) {
-            console.log('Using navigator.share');
-            navigator.share({
-                title: 'Расчёт стоимости чистки ковра',
-                text: shareText
-            }).then(() => {
-                console.log('Share successful');
-                this.showMessage('Результат поделен!');
-            }).catch((error) => {
-                console.error('Share failed:', error);
-                this.copyToClipboard(shareText);
-            });
-        } else {
-            console.log('Navigator.share not available, copying to clipboard');
-            this.copyToClipboard(shareText);
-        }
+        
+        // Создаём изображение для fallback
+        this.createResultImage().then((imageBlob) => {
+            // Fallback для браузера
+            if (navigator.share) {
+                console.log('Using navigator.share with image');
+                navigator.share({
+                    title: 'Расчёт стоимости чистки ковра',
+                    text: 'Результат расчёта стоимости чистки ковра',
+                    files: [new File([imageBlob], 'result.png', { type: 'image/png' })]
+                }).then(() => {
+                    console.log('Share successful');
+                    this.showMessage('Результат поделен!');
+                }).catch((error) => {
+                    console.error('Share failed:', error);
+                    this.copyToClipboard();
+                });
+            } else {
+                console.log('Navigator.share not available, copying to clipboard');
+                this.copyToClipboard();
+            }
+        }).catch((error) => {
+            console.error('Error creating image for fallback:', error);
+            this.copyToClipboard();
+        });
     }
     
     copyToClipboard(text) {
         console.log('Copying to clipboard');
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log('Clipboard write successful');
-                this.showMessage('Результат скопирован в буфер обмена!');
-            }).catch((error) => {
-                console.error('Clipboard write failed:', error);
+        
+        // Если передан текст, копируем текст
+        if (text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('Clipboard write successful');
+                    this.showMessage('Результат скопирован в буфер обмена!');
+                }).catch((error) => {
+                    console.error('Clipboard write failed:', error);
+                    this.legacyCopyToClipboard(text);
+                });
+            } else {
+                console.log('Modern clipboard API not available, using legacy method');
                 this.legacyCopyToClipboard(text);
-            });
+            }
         } else {
-            console.log('Modern clipboard API not available, using legacy method');
-            this.legacyCopyToClipboard(text);
+            // Если текст не передан, создаём изображение и копируем его
+            this.createResultImage().then((imageBlob) => {
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            'image/png': imageBlob
+                        })
+                    ]).then(() => {
+                        console.log('Image copied to clipboard');
+                        this.showMessage('Изображение результата скопировано в буфер обмена!');
+                    }).catch((error) => {
+                        console.error('Image clipboard write failed:', error);
+                        this.showMessage('Не удалось скопировать изображение. Попробуйте кнопку "Отправить боту".');
+                    });
+                } else {
+                    console.log('Clipboard API with images not available');
+                    this.showMessage('Копирование изображений не поддерживается в этом браузере. Используйте кнопку "Отправить боту".');
+                }
+            }).catch((error) => {
+                console.error('Error creating image for clipboard:', error);
+                this.showMessage('Ошибка создания изображения. Попробуйте кнопку "Отправить боту".');
+            });
         }
     }
     

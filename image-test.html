@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест создания изображений - Калькулятор ковров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #006699;
+        }
+        .result {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background: #ffeaea;
+            border-left-color: #dc3545;
+        }
+        .image-preview {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .console-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Тест создания изображений результата</h1>
+    
+    <div class="test-container">
+        <h2>Тест 1: Создание изображения результата</h2>
+        <p>Создайте изображение с тестовыми данными</p>
+        <button class="test-button" onclick="testImageCreation()">Создать изображение</button>
+        <div id="image-result" class="result" style="display: none;"></div>
+        <img id="preview-image" class="image-preview" style="display: none;">
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 2: Копирование изображения в буфер обмена</h2>
+        <p>Создайте изображение и скопируйте его в буфер обмена</p>
+        <button class="test-button" onclick="testImageCopy()">Создать и скопировать</button>
+        <div id="copy-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 3: Проверка поддержки браузера</h2>
+        <p>Проверьте возможности браузера для работы с изображениями</p>
+        <button class="test-button" onclick="testBrowserSupport()">Проверить поддержку</button>
+        <div id="support-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Консоль отладки</h2>
+        <div id="console-output" class="console-output"></div>
+        <button class="test-button" onclick="clearConsole()">Очистить консоль</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 Ссылки</h2>
+        <a href="index.html" class="test-button" style="text-decoration: none; display: inline-block;">Открыть основное приложение</a>
+    </div>
+
+    <script>
+        // Перехватываем console.log для отображения в интерфейсе
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addToConsole(message, type = 'log') {
+            const consoleOutput = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${type === 'error' ? 'red' : 'black'};">${message}</span>`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // Тестовые данные
+        const testData = {
+            package: 'premium',
+            pile: 'long',
+            length: 2.5,
+            width: 1.5,
+            odorRemoval: true,
+            orderNumber: 'TEST123'
+        };
+
+        const prices = {
+            standard: { short: 10, long: 11 },
+            premium: { short: 13, long: 15 }
+        };
+
+        function calculateTotalPrice() {
+            const area = testData.length * testData.width;
+            const pricePerSquareMeter = prices[testData.package][testData.pile];
+            let totalPrice = area * pricePerSquareMeter;
+            
+            if (testData.odorRemoval) {
+                totalPrice += 25;
+            }
+            
+            return Math.round(totalPrice);
+        }
+
+        async function createResultImage() {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Создаём canvas для изображения
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Размеры изображения
+                    const width = 400;
+                    const height = 300;
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Получаем тему
+                    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    
+                    // Цвета в зависимости от темы
+                    const bgColor = isDark ? '#2d2d2d' : '#ffffff';
+                    const textColor = isDark ? '#ffffff' : '#000000';
+                    const accentColor = '#0088cc';
+                    const borderColor = isDark ? '#404040' : '#e9ecef';
+                    
+                    // Фон
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Рамка
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(10, 10, width - 20, height - 20);
+                    
+                    // Заголовок
+                    ctx.fillStyle = accentColor;
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🧩 Результат расчёта', width / 2, 50);
+                    
+                    // Данные результата
+                    const area = testData.length * testData.width;
+                    const totalPrice = calculateTotalPrice();
+                    
+                    const packageNames = {
+                        standard: 'Стандартный',
+                        premium: 'Премиум'
+                    };
+                    
+                    const pileNames = {
+                        short: 'Короткий',
+                        long: 'Длинный'
+                    };
+                    
+                    const resultData = [
+                        ['Номер заказа:', testData.orderNumber || 'Не указан'],
+                        ['Пакет услуг:', packageNames[testData.package]],
+                        ['Тип ворса:', pileNames[testData.pile]],
+                        ['Площадь:', `${area.toFixed(1)} м²`],
+                        ['Доп.услуга:', testData.odorRemoval ? 'Удаление запаха — да' : 'Нет'],
+                        ['Итоговая стоимость:', `${totalPrice} рублей`]
+                    ];
+                    
+                    // Отображаем данные
+                    ctx.fillStyle = textColor;
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'left';
+                    
+                    let y = 90;
+                    resultData.forEach(([label, value], index) => {
+                        // Метка
+                        ctx.fillText(label, 30, y);
+                        
+                        // Значение
+                        if (index === resultData.length - 1) {
+                            // Итоговая стоимость выделяем
+                            ctx.fillStyle = accentColor;
+                            ctx.font = 'bold 18px Arial';
+                        }
+                        ctx.fillText(value, 200, y);
+                        
+                        // Возвращаем обычный стиль
+                        ctx.fillStyle = textColor;
+                        ctx.font = '16px Arial';
+                        
+                        // Линия разделитель
+                        if (index < resultData.length - 1) {
+                            ctx.strokeStyle = borderColor;
+                            ctx.beginPath();
+                            ctx.moveTo(30, y + 10);
+                            ctx.lineTo(width - 30, y + 10);
+                            ctx.stroke();
+                        }
+                        
+                        y += 30;
+                    });
+                    
+                    // Подпись внизу
+                    ctx.fillStyle = textColor;
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Калькулятор ковров - Telegram Mini App', width / 2, height - 20);
+                    
+                    // Конвертируем в blob
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Failed to create image blob'));
+                        }
+                    }, 'image/png');
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function testImageCreation() {
+            console.log('Тестирование создания изображения...');
+            
+            createResultImage().then((imageBlob) => {
+                console.log('✅ Изображение создано успешно');
+                console.log('Размер изображения:', imageBlob.size, 'байт');
+                
+                // Показываем изображение
+                const imageUrl = URL.createObjectURL(imageBlob);
+                const previewImage = document.getElementById('preview-image');
+                previewImage.src = imageUrl;
+                previewImage.style.display = 'block';
+                
+                const result = document.getElementById('image-result');
+                result.style.display = 'block';
+                result.innerHTML = '✅ Изображение создано успешно! Размер: ' + imageBlob.size + ' байт';
+                
+            }).catch((error) => {
+                console.error('❌ Ошибка создания изображения:', error);
+                const result = document.getElementById('image-result');
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = '❌ Ошибка создания изображения: ' + error.message;
+            });
+        }
+
+        function testImageCopy() {
+            console.log('Тестирование копирования изображения...');
+            
+            createResultImage().then((imageBlob) => {
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            'image/png': imageBlob
+                        })
+                    ]).then(() => {
+                        console.log('✅ Изображение скопировано в буфер обмена');
+                        const result = document.getElementById('copy-result');
+                        result.style.display = 'block';
+                        result.innerHTML = '✅ Изображение скопировано в буфер обмена! Попробуйте вставить его в любой чат (Ctrl+V).';
+                    }).catch((error) => {
+                        console.error('❌ Ошибка копирования:', error);
+                        const result = document.getElementById('copy-result');
+                        result.style.display = 'block';
+                        result.className = 'result error';
+                        result.innerHTML = '❌ Ошибка копирования: ' + error.message;
+                    });
+                } else {
+                    console.log('❌ Clipboard API с изображениями не поддерживается');
+                    const result = document.getElementById('copy-result');
+                    result.style.display = 'block';
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Копирование изображений не поддерживается в этом браузере';
+                }
+            }).catch((error) => {
+                console.error('❌ Ошибка создания изображения для копирования:', error);
+                const result = document.getElementById('copy-result');
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = '❌ Ошибка создания изображения: ' + error.message;
+            });
+        }
+
+        function testBrowserSupport() {
+            console.log('Проверка поддержки браузера...');
+            
+            const support = {
+                canvas: !!document.createElement('canvas').getContext,
+                clipboard: !!navigator.clipboard,
+                clipboardWrite: !!navigator.clipboard?.write,
+                clipboardWriteText: !!navigator.clipboard?.writeText,
+                fileAPI: !!window.File,
+                blobAPI: !!window.Blob,
+                urlAPI: !!window.URL
+            };
+            
+            console.log('Результаты проверки:', support);
+            
+            const result = document.getElementById('support-result');
+            result.style.display = 'block';
+            
+            let html = '<h3>Поддержка браузера:</h3><ul>';
+            Object.entries(support).forEach(([feature, supported]) => {
+                html += `<li>${feature}: ${supported ? '✅ Поддерживается' : '❌ Не поддерживается'}</li>`;
+            });
+            html += '</ul>';
+            
+            const allSupported = Object.values(support).every(Boolean);
+            if (allSupported) {
+                html += '<p style="color: green;">✅ Все функции поддерживаются!</p>';
+            } else {
+                html += '<p style="color: orange;">⚠️ Некоторые функции не поддерживаются</p>';
+            }
+            
+            result.innerHTML = html;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        // Инициализация
+        console.log('Тестовая страница создания изображений загружена');
+        console.log('Тестовые данные:', testData);
+    </script>
+</body>
+</html>
