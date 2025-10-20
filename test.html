@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест - Калькулятор ковров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #006699;
+        }
+        .result {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background: #ffeaea;
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тестирование калькулятора ковров</h1>
+    
+    <div class="test-container">
+        <h2>Тест 1: Стандартный пакет, короткий ворс</h2>
+        <p>Ожидаемый результат: 2.5 м² × 10 руб/м² = 25 рублей</p>
+        <button class="test-button" onclick="testStandardShort()">Запустить тест</button>
+        <div id="result1" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 2: Премиум пакет, длинный ворс</h2>
+        <p>Ожидаемый результат: 3.0 м² × 15 руб/м² = 45 рублей</p>
+        <button class="test-button" onclick="testPremiumLong()">Запустить тест</button>
+        <div id="result2" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 3: С удалением запаха</h2>
+        <p>Ожидаемый результат: 2.0 м² × 11 руб/м² + 25 руб = 47 рублей</p>
+        <button class="test-button" onclick="testWithOdorRemoval()">Запустить тест</button>
+        <div id="result3" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Тест 4: Валидация размеров</h2>
+        <p>Тест проверки корректности введённых размеров</p>
+        <button class="test-button" onclick="testValidation()">Запустить тест</button>
+        <div id="result4" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 Ссылки</h2>
+        <a href="index.html" class="test-button" style="text-decoration: none; display: inline-block;">Открыть приложение</a>
+    </div>
+
+    <script>
+        // Импортируем логику калькулятора
+        class TestCalculator {
+            constructor() {
+                this.prices = {
+                    standard: {
+                        short: 10,
+                        long: 11
+                    },
+                    premium: {
+                        short: 13,
+                        long: 15
+                    }
+                };
+                this.odorRemovalPrice = 25;
+            }
+
+            calculate(length, width, packageType, pileType, odorRemoval = false) {
+                const area = length * width;
+                const pricePerSquareMeter = this.prices[packageType][pileType];
+                let totalPrice = area * pricePerSquareMeter;
+                
+                if (odorRemoval) {
+                    totalPrice += this.odorRemovalPrice;
+                }
+                
+                return {
+                    area: area,
+                    totalPrice: Math.round(totalPrice)
+                };
+            }
+
+            validateDimensions(length, width) {
+                if (!length || !width || length <= 0 || width <= 0) {
+                    return { valid: false, error: 'Размеры должны быть больше 0' };
+                }
+                if (length > 50 || width > 50) {
+                    return { valid: false, error: 'Размеры не могут превышать 50 метров' };
+                }
+                return { valid: true };
+            }
+        }
+
+        const calculator = new TestCalculator();
+
+        function testStandardShort() {
+            const result = calculator.calculate(2.5, 1.0, 'standard', 'short');
+            const expected = 25;
+            const success = result.totalPrice === expected;
+            
+            document.getElementById('result1').style.display = 'block';
+            document.getElementById('result1').className = success ? 'result' : 'result error';
+            document.getElementById('result1').innerHTML = `
+                <strong>Результат:</strong> ${result.totalPrice} рублей<br>
+                <strong>Ожидалось:</strong> ${expected} рублей<br>
+                <strong>Статус:</strong> ${success ? '✅ Успешно' : '❌ Ошибка'}
+            `;
+        }
+
+        function testPremiumLong() {
+            const result = calculator.calculate(3.0, 1.0, 'premium', 'long');
+            const expected = 45;
+            const success = result.totalPrice === expected;
+            
+            document.getElementById('result2').style.display = 'block';
+            document.getElementById('result2').className = success ? 'result' : 'result error';
+            document.getElementById('result2').innerHTML = `
+                <strong>Результат:</strong> ${result.totalPrice} рублей<br>
+                <strong>Ожидалось:</strong> ${expected} рублей<br>
+                <strong>Статус:</strong> ${success ? '✅ Успешно' : '❌ Ошибка'}
+            `;
+        }
+
+        function testWithOdorRemoval() {
+            const result = calculator.calculate(2.0, 1.0, 'standard', 'long', true);
+            const expected = 47;
+            const success = result.totalPrice === expected;
+            
+            document.getElementById('result3').style.display = 'block';
+            document.getElementById('result3').className = success ? 'result' : 'result error';
+            document.getElementById('result3').innerHTML = `
+                <strong>Результат:</strong> ${result.totalPrice} рублей<br>
+                <strong>Ожидалось:</strong> ${expected} рублей<br>
+                <strong>Статус:</strong> ${success ? '✅ Успешно' : '❌ Ошибка'}
+            `;
+        }
+
+        function testValidation() {
+            const tests = [
+                { length: 0, width: 2, expected: false },
+                { length: 2, width: 0, expected: false },
+                { length: -1, width: 2, expected: false },
+                { length: 2, width: -1, expected: false },
+                { length: 51, width: 2, expected: false },
+                { length: 2, width: 51, expected: false },
+                { length: 2, width: 3, expected: true }
+            ];
+
+            let results = [];
+            tests.forEach((test, index) => {
+                const validation = calculator.validateDimensions(test.length, test.width);
+                const success = validation.valid === test.expected;
+                results.push(`Тест ${index + 1}: ${success ? '✅' : '❌'} (${test.length}×${test.width})`);
+            });
+
+            document.getElementById('result4').style.display = 'block';
+            document.getElementById('result4').innerHTML = results.join('<br>');
+        }
+    </script>
+</body>
+</html>
