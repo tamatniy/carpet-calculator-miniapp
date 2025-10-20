@@ -393,14 +393,16 @@ class CarpetCalculator {
                     }));
                     
                     console.log('Data sent to bot');
-                    this.showMessage('Результат отправлен боту! Проверьте чат.');
                     
-                    // Закрываем Mini App через 1 секунду
+                    // Показываем правильное сообщение
+                    this.showMessage('Данные отправлены боту. Если сообщение не появилось в чате, используйте кнопку "Скопировать результат".');
+                    
+                    // Закрываем Mini App через 2 секунды
                     setTimeout(() => {
                         if (window.Telegram.WebApp.close) {
                             window.Telegram.WebApp.close();
                         }
-                    }, 1000);
+                    }, 2000);
                     
                 } else {
                     throw new Error('WebApp.close not available');
@@ -408,6 +410,7 @@ class CarpetCalculator {
             } catch (error) {
                 console.error('Error sending to bot:', error);
                 // Fallback к копированию в буфер обмена
+                this.showMessage('Ошибка отправки. Используйте кнопку "Скопировать результат".');
                 this.fallbackShare(shareText);
             }
         } else {
