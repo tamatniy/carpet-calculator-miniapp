@@ -35,6 +35,37 @@
     }
 }
 
+/* Кнопка для открытия Mini App */
+.telegram-open-btn {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(0, 136, 204, 0.9);
+    padding: 10px 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.telegram-open-btn button {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    font-weight: 600;
+    margin: 0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.telegram-open-btn button:hover {
+    background: white;
+    color: var(--accent-color);
+    transform: none;
+}
+
 /* Базовые стили */
 * {
     margin: 0;

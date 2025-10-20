@@ -37,6 +37,18 @@ class CarpetCalculator {
             
             // Настройка темы
             this.setupTheme();
+            
+            // Проверяем, открыто ли приложение в Telegram
+            if (window.Telegram.WebApp.initData) {
+                // Приложение открыто в Telegram
+                document.getElementById('telegram-open-btn').style.display = 'none';
+            } else {
+                // Приложение открыто в браузере, показываем кнопку
+                document.getElementById('telegram-open-btn').style.display = 'block';
+            }
+        } else {
+            // Telegram Web App не доступен
+            document.getElementById('telegram-open-btn').style.display = 'block';
         }
         
         this.bindEvents();
@@ -167,10 +179,8 @@ class CarpetCalculator {
         // Выделить выбранную кнопку
         document.querySelector(`[data-package="${packageType}"]`).classList.add('selected');
         
-        // Перейти к следующему шагу
-        setTimeout(() => {
-            this.showScreen('pile');
-        }, 300);
+        // Перейти к следующему шагу сразу
+        this.showScreen('pile');
     }
     
     selectPile(pileType) {
@@ -184,10 +194,8 @@ class CarpetCalculator {
         // Выделить выбранную кнопку
         document.querySelector(`[data-pile="${pileType}"]`).classList.add('selected');
         
-        // Перейти к следующему шагу
-        setTimeout(() => {
-            this.showScreen('dimensions');
-        }, 300);
+        // Перейти к следующему шагу сразу
+        this.showScreen('dimensions');
     }
     
     updatePrices() {
@@ -236,6 +244,12 @@ class CarpetCalculator {
     }
     
     calculate() {
+        // Проверяем все необходимые данные
+        if (!this.data.package || !this.data.pile) {
+            this.showError('Пожалуйста, выберите пакет услуг и тип ворса');
+            return;
+        }
+        
         if (!this.validateDimensions()) {
             return;
         }
@@ -297,7 +311,7 @@ class CarpetCalculator {
         };
         
         const shareText = `🧩 Расчёт стоимости чистки ковра
-        
+
 Номер заказа: ${this.data.orderNumber || 'Не указан'}
 Пакет услуг: ${packageNames[this.data.package]}
 Тип ворса: ${pileNames[this.data.pile]}
@@ -309,31 +323,55 @@ class CarpetCalculator {
 
         if (window.Telegram && window.Telegram.WebApp) {
             // Использовать Telegram Web App API для отправки
-            window.Telegram.WebApp.sendData(JSON.stringify({
-                type: 'calculation_result',
-                data: {
-                    orderNumber: this.data.orderNumber,
-                    package: packageNames[this.data.package],
-                    pile: pileNames[this.data.pile],
-                    area: area.toFixed(1),
-                    odorRemoval: this.data.odorRemoval,
-                    totalPrice: Math.round(totalPrice)
-                }
-            }));
-        } else {
-            // Fallback для браузера
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Расчёт стоимости чистки ковра',
-                    text: shareText
-                });
-            } else {
-                // Копировать в буфер обмена
-                navigator.clipboard.writeText(shareText).then(() => {
-                    this.showMessage('Результат скопирован в буфер обмена');
-                });
+            try {
+                window.Telegram.WebApp.sendData(JSON.stringify({
+                    type: 'calculation_result',
+                    data: {
+                        orderNumber: this.data.orderNumber,
+                        package: packageNames[this.data.package],
+                        pile: pileNames[this.data.pile],
+                        area: area.toFixed(1),
+                        odorRemoval: this.data.odorRemoval,
+                        totalPrice: Math.round(totalPrice)
+                    }
+                }));
+                this.showMessage('Результат отправлен в чат!');
+            } catch (error) {
+                console.error('Ошибка отправки:', error);
+                this.fallbackShare(shareText);
             }
+        } else {
+            this.fallbackShare(shareText);
         }
+    }
+    
+    fallbackShare(shareText) {
+        // Fallback для браузера
+        if (navigator.share) {
+            navigator.share({
+                title: 'Расчёт стоимости чистки ковра',
+                text: shareText
+            }).catch(() => {
+                this.copyToClipboard(shareText);
+            });
+        } else {
+            this.copyToClipboard(shareText);
+        }
+    }
+    
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            this.showMessage('Результат скопирован в буфер обмена');
+        }).catch(() => {
+            // Fallback для старых браузеров
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showMessage('Результат скопирован в буфер обмена');
+        });
     }
     
     reset() {
@@ -385,6 +423,17 @@ class CarpetCalculator {
 document.addEventListener('DOMContentLoaded', () => {
     new CarpetCalculator();
 });
+
+// Глобальная функция для открытия Mini App
+function openMiniApp() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        // Если открыто в Telegram, просто скрываем кнопку
+        document.getElementById('telegram-open-btn').style.display = 'none';
+    } else {
+        // Если открыто в браузере, показываем инструкцию
+        alert('Для полной функциональности откройте это приложение через Telegram бота:\n\n1. Найдите вашего бота в Telegram\n2. Отправьте команду /start\n3. Нажмите на кнопку "Калькулятор ковров"');
+    }
+}
 
 // Обработка ошибок
 window.addEventListener('error', (e) => {
