@@ -47,8 +47,8 @@
     }
   ],
   "telegram": {
-    "bot_username": "@your_bot_username",
-    "webapp_url": "https://your-domain.com/index.html",
+    "bot_username": "@carpet_calculator_bot",
+    "webapp_url": "https://tamatniy.github.io/carpet-calculator-miniapp/",
     "commands": [
       {
         "command": "start",
