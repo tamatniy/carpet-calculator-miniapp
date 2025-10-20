@@ -381,13 +381,28 @@ body {
 /* Кнопки действий */
 .action-buttons {
     display: flex;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .action-buttons .btn-primary,
 .action-buttons .btn-secondary {
     flex: 1;
     margin-bottom: 0;
+    min-width: 120px;
+}
+
+/* Адаптивность для кнопок действий */
+@media (max-width: 480px) {
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn-primary,
+    .action-buttons .btn-secondary {
+        flex: none;
+        width: 100%;
+    }
 }
 
 /* Адаптивность */

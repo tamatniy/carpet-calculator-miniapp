@@ -155,6 +155,13 @@ class CarpetCalculator {
             this.reset();
         });
         
+        document.getElementById('copy-result').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Copy button clicked');
+            this.copyResult();
+        });
+        
         document.getElementById('share-result').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -354,29 +361,94 @@ class CarpetCalculator {
 
         if (window.Telegram && window.Telegram.WebApp) {
             console.log('Telegram WebApp available');
+            
+            // Попробуем использовать разные методы отправки
             try {
-                // Попробуем отправить данные
-                window.Telegram.WebApp.sendData(JSON.stringify({
-                    type: 'calculation_result',
-                    data: {
-                        orderNumber: this.data.orderNumber,
-                        package: packageNames[this.data.package],
-                        pile: pileNames[this.data.pile],
-                        area: area.toFixed(1),
-                        odorRemoval: this.data.odorRemoval,
-                        totalPrice: Math.round(totalPrice)
-                    }
-                }));
-                console.log('Data sent successfully');
-                this.showMessage('Результат отправлен в чат!');
+                // Метод 1: Попробуем закрыть Mini App и отправить сообщение
+                if (window.Telegram.WebApp.close) {
+                    // Создаём сообщение для отправки
+                    const message = `🧩 Результат расчёта стоимости чистки ковра:
+
+📋 Номер заказа: ${this.data.orderNumber || 'Не указан'}
+📦 Пакет услуг: ${packageNames[this.data.package]}
+🧶 Тип ворса: ${pileNames[this.data.pile]}
+📏 Площадь: ${area.toFixed(1)} м²
+🧴 Доп.услуга: ${this.data.odorRemoval ? 'Удаление запаха — да' : 'Нет'}
+💰 Итоговая стоимость: ${Math.round(totalPrice)} рублей
+
+#КалькуляторКовров #РасчётСтоимости`;
+                    
+                    // Отправляем данные боту
+                    window.Telegram.WebApp.sendData(JSON.stringify({
+                        action: 'share_result',
+                        result: {
+                            orderNumber: this.data.orderNumber,
+                            package: packageNames[this.data.package],
+                            pile: pileNames[this.data.pile],
+                            area: area.toFixed(1),
+                            odorRemoval: this.data.odorRemoval,
+                            totalPrice: Math.round(totalPrice),
+                            message: message
+                        }
+                    }));
+                    
+                    console.log('Data sent to bot');
+                    this.showMessage('Результат отправлен боту! Проверьте чат.');
+                    
+                    // Закрываем Mini App через 1 секунду
+                    setTimeout(() => {
+                        if (window.Telegram.WebApp.close) {
+                            window.Telegram.WebApp.close();
+                        }
+                    }, 1000);
+                    
+                } else {
+                    throw new Error('WebApp.close not available');
+                }
             } catch (error) {
-                console.error('Ошибка отправки:', error);
+                console.error('Error sending to bot:', error);
+                // Fallback к копированию в буфер обмена
                 this.fallbackShare(shareText);
             }
         } else {
             console.log('Telegram WebApp not available, using fallback');
             this.fallbackShare(shareText);
         }
+    }
+    
+    copyResult() {
+        console.log('Copy result function called');
+        
+        const area = this.data.length * this.data.width;
+        const pricePerSquareMeter = this.prices[this.data.package][this.data.pile];
+        let totalPrice = area * pricePerSquareMeter;
+        
+        if (this.data.odorRemoval) {
+            totalPrice += this.odorRemovalPrice;
+        }
+        
+        const packageNames = {
+            standard: 'Стандартный',
+            premium: 'Премиум'
+        };
+        
+        const pileNames = {
+            short: 'Короткий',
+            long: 'Длинный'
+        };
+        
+        const shareText = `🧩 Расчёт стоимости чистки ковра
+
+Номер заказа: ${this.data.orderNumber || 'Не указан'}
+Пакет услуг: ${packageNames[this.data.package]}
+Тип ворса: ${pileNames[this.data.pile]}
+Площадь: ${area.toFixed(1)} м²
+Доп.услуга: ${this.data.odorRemoval ? 'Удаление запаха — да' : 'Нет'}
+Итоговая стоимость: ${Math.round(totalPrice)} рублей
+
+Рассчитано в Telegram Mini App "Калькулятор ковров"`;
+
+        this.copyToClipboard(shareText);
     }
     
     fallbackShare(shareText) {
